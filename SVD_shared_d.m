@@ -1,15 +1,17 @@
-this_pair = allPairs{1};
+this_pair = DLX{3};
 ms1 = this_pair{1}.MS{2};
 ms2 = this_pair{2}.MS{2};
 m2tom1 = this_pair{1}.TimeStamp.mapTs{2}.M2toM1;
 tstamp1 = this_pair{1}.TimeStamp.Ts{2}.Ms;
 tstamp2 = this_pair{2}.TimeStamp.Ts{2}.Ms;
 btimestamp = this_pair{2}.TimeStamp.Ts{2}.Bv;
-B1 = this_pair{1}.Behavior{2};
-B2 = this_pair{2}.Behavior{2};
+B1 = this_pair{1}.Behavior{2}.Human;
+B2 = this_pair{2}.Behavior{2}.Human;
+m1 = this_pair{1}.MS{2};
+m2 = this_pair{2}.MS{2};
 %%
-avgtrace1 = mean(zscore(ms1.FiltTraces(:, logical(ms1.cell_label))),2);
-avgtrace2 = mean(zscore(ms2.FiltTraces(:, logical(ms2.cell_label))),2);
+avgtrace1 = mean(zscore(ms1.FiltTraces(:, logical(ms1.goodCellVec))),2);
+avgtrace2 = mean(zscore(ms2.FiltTraces(:, logical(ms2.goodCellVec))),2);
 f = figure;
 f.Position = [100,100,1200,200];
 a = axes;
@@ -18,10 +20,22 @@ a.XLim = [0,round(max(tstamp1),-2)];
 a.YLim = [min([avgtrace1;avgtrace2])-0.1, max([avgtrace1;avgtrace2])+0.1]
 a.XLabel.String = 'Time(s)';
 a.YLabel.String = 'dF';
-AddBehavBlocks(a,B,btimestamp,{'human_interfere'},[0.6 0.6 0.6]);
-plot(a,tstamp1, smoothdata(avgtrace1,1,'movmean',15), 'r');
-plot(a,tstamp2, smoothdata(avgtrace2,1,'movmean',15), 'b');
-saveas(f,'avgtrace.eps','epsc');
+AddBehavBlocks(a,B1,btimestamp,{'human_interfere'},[0.6 0.6 0.6]);
+plot(a1,tstamp1/1000, smoothdata(avgtrace1,1,'movmean',15), 'r-');
+plot(a1,tstamp2/1000, smoothdata(avgtrace2,1,'movmean',15), 'b-');
+% saveas(f,'avgtrace.eps','epsc');
+%% PCA
+coeff1 = pca(zscore(ms1.FiltTraces(:, logical(ms1.goodCellVec))));
+coeff2 = pca(zscore(ms2.FiltTraces(:, logical(ms2.goodCellVec))));
+ms1_proj = zscore(ms1.FiltTraces(:, logical(ms1.goodCellVec))) * coeff1;
+ms2_proj = zscore(ms2.FiltTraces(:, logical(ms2.goodCellVec))) * coeff2;
+figure, a2 = axes; a2.NextPlot = 'add';
+plot(a2, tstamp1/1000, ms1_proj(:,1),'r-'); plot(a2, tstamp2/1000, ms2_proj(:,1), 'b-');
+AddBehavBlocks(a3,B1,btimestamp/1000,{'human_interfere'},[0.6 0.6 0.6]);
+a2.XLim = [0, tstamp1(end)/1000];
+corr(ms1_proj(:,1),ms2_proj(m2tom1,1));
+explained1 = diag(cov(ms1_proj))/sum(diag(cov(ms1_proj)));
+explained2 = diag(cov(ms2_proj))/sum(diag(cov(ms2_proj)));
 
 %% svd
 % close all
@@ -50,9 +64,9 @@ a.XLim = [0,round(max(tstamp1),-2)];
 a.YLim = [min([ms1_ca_u(:,pcn);ms2_ca_v(:,pcn)])-0.1, max([ms1_ca_u(:,pcn);ms2_ca_v(:,pcn)])+0.1];
 a.XLabel.String = 'Time(s)';
 a.YLabel.String = 'AU';
-AddBehavBlocks(a,B2,btimestamp,social_bv,assignColors(social_bv));
-plot(a,tstamp1, smoothdata(ms1_ca_u(:,pcn),1,'movmean',15), 'r');
-plot(a,tstamp2(m2tom1), smoothdata(ms2_ca_v(:,pcn),1,'movmean',15), 'b');
+AddBehavBlocks(a,B2,btimestamp,{'human_interfere'},assignColors({'human_interfere'}));
+plot(a3,tstamp1/1000, smoothdata(ms1_ca_u(:,pcn),1,'movmean',15), 'r');
+plot(a3,tstamp2(m2tom1)/1000, smoothdata(ms2_ca_v(:,pcn),1,'movmean',15), 'b');
 corr(ms2_ca_v(:,pcn),ms1_ca_u(:,pcn))
 % saveas(f,['PC',num2str(pcn),'.eps'],'epsc');
 explained1 = diag(ms1_ca_u'*ms1_ca_u)/sum(diag(ms1_ca_u'*ms1_ca_u));
