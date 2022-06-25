@@ -198,8 +198,8 @@ for j = 1:numel(allPairs_behav)
         m = find(~cellfun(@isempty,allPairs_behav{j}{1}.Behavior));
         M1 = allPairs_behav{j}{1};
         M2 = allPairs_behav{j}{2};
-        M1FTrace = M1.MS{m}.FiltTraces;
-        M2FTrace = M2.MS{m}.FiltTraces;
+        M1FTrace = M1.MS{m}.FiltTraces(M1.TimeStamp.mapTs{m}.M2B,M1.MS{m}.goodCellVec);
+        M2FTrace = M2.MS{m}.FiltTraces(M2.TimeStamp.mapTs{m}.M2B,M2.MS{m}.goodCellVec);
         mlen = min(size(M1FTrace,1), size(M2FTrace,1));
         [PLSC1, PLSC2] = GetPLSC(M1FTrace(1:mlen,:),M2FTrace(1:mlen,:));
         varPLSC1 = diag(PLSC1'*PLSC1); varPLSC2 = diag(PLSC2'*PLSC2);
@@ -239,12 +239,7 @@ for i = 1:6
     for j = 1:length(cur_data)
         plot(0*cur_data{j}+j, cur_data{j},'k.','MarkerSize',10);
         if any([1,2,4]==j)
-            if j==4
-                k=3;
-            else
-                k=j;
-            end
-            plot(0*cur_data{j}(hilight{k})+j, cur_data{j}(hilight{k}),'r.','MarkerSize',10);
+            plot
         end
     end
     % add lines
