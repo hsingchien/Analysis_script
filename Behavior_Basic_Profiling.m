@@ -36,7 +36,8 @@ for i = 1:length(allPairs_behav)
     M2 = allPairs_behav{i}{2};
     Gen1 = M1.GenType;
     Gen2 = M2.GenType;
-    m = find(~cellfun(@isempty,M1.Behavior));
+    m = intersect(find(~cellfun(@isempty,M1.Behavior)), find(contains(M1.videoInfo.session,'exp')));
+    m = m(end);
     % remove human_interfere
     non_human = ~(M1.Behavior{m}.LogicalVecs{hm_interfere} + M2.Behavior{m}.LogicalVecs{hm_interfere});
     animalGen = [animalGen;Gen1;Gen2];
@@ -69,23 +70,25 @@ writetable(T1,'categorical_bv_prct.csv');
 T2 = table(individual_bv{:}, animalID, animalGen, 'VariableNames',[all_behav_exp(1:24),'animalID','animalGen']);
 writetable(T2,'individual_bv_prct.csv');
 %% 
-KO_behav_grp = T1(strcmp(T1.animalGen,'KO'),:);
-HET_behav_grp = T1(strcmp(T1.animalGen,'HET'),:);
-WT_behav_grp = T1(strcmp(T1.animalGen,'WT'),:);
+KO_behav_grp = T1(T1.animalGen=='KO',:);
+HET_behav_grp = T1(T1.animalGen=='HET',:);
+WT_behav_grp = T1(T1.animalGen=='WT',:);
 colnames = T1.Properties.VariableNames;
+C57 = T1(T1.animalGen=='C57',:);
 figure; 
 for i = 1:8
-    ax = subplot(2,4,i); XZBoxPlot({KO_behav_grp.(colnames{i}),HET_behav_grp.(colnames{i}),WT_behav_grp.(colnames{i})},[],[],{'KO','HET','WT'},[],ax); title(colnames{i});
+    ax = subplot(2,4,i); XZBoxPlot({KO_behav_grp.(colnames{i}),HET_behav_grp.(colnames{i}),WT_behav_grp.(colnames{i}),C57.(colnames{i})},[],[],{'KO','HET','WT','C57'},[],ax); title(strrep(colnames{i},'_','-'));
 end
 
-KO_behav = T2(strcmp(T2.animalGen,'KO'),:);
-HET_behav = T2(strcmp(T2.animalGen,'HET'),:);
-WT_behav = T2(strcmp(T2.animalGen,'WT'),:);
+KO_behav = T2(T2.animalGen=='KO',:);
+HET_behav = T2(T2.animalGen=='HET',:);
+WT_behav = T2(T2.animalGen=='WT',:);
+C57 = T2(T2.animalGen=='C57',:);
 colnames = T2.Properties.VariableNames;
 figure; behav_idx = [1:14,16:19,21,24];
 for j = 1:numel(behav_idx)
     i = behav_idx(j);
-    ax = subplot(3,7,j); XZBoxPlot({KO_behav.(colnames{i}),HET_behav.(colnames{i}),WT_behav.(colnames{i})},[],[],{'KO','HET','WT'},[],ax); title(strrep(colnames{i},'_','-'));
+    ax = subplot(3,7,j); XZBoxPlot({KO_behav.(colnames{i}),HET_behav.(colnames{i}),WT_behav.(colnames{i}),C57.(colnames{i})},[],[],{'KO','HET','WT','C57'},[],ax); title(strrep(colnames{i},'_','-'));
 end
 saveas(gcf,'Categorical_interval.png','png');
 saveas(gcf,'Individual_behavior.png','png');
@@ -98,7 +101,8 @@ for i = 1:length(allPairs_behav)
     M2 = allPairs_behav{i}{2};
     Gen1 = M1.GenType;
     Gen2 = M2.GenType;
-    m = find(~cellfun(@isempty,M1.Behavior));
+    m = intersect(find(~cellfun(@isempty,M1.Behavior)), find(contains(M1.videoInfo.session,'exp')));
+    m = m(end);
     M1b = M1.Behavior{m};
     M2b = M2.Behavior{m};
     for j = 1:length(allbehav_idx)
@@ -115,20 +119,22 @@ for i = 1:length(allPairs_behav)
         end
         cur_start1 = sort(cur_start1); cur_end1 = sort(cur_end1);
         cur_start2 = sort(cur_start2); cur_end2 = sort(cur_end2);
-        interval_from_last{j} = [interval_from_last{j}; mean(cur_start1(2:end)-cur_end1(1:end-1)); mean(cur_start2(2:end)-cur_end2(1:end-1))];
+        interval_from_last{j} = [interval_from_last{j}; 1/30*mean(cur_start1(2:end)-cur_end1(1:end-1)); 1/30*mean(cur_start2(2:end)-cur_end2(1:end-1))];
 %         interval_from_any_last{j} = [interval_from_any_last{}];
     end
 end
 %%
 T3 = table(interval_from_last{:}, animalID, animalGen, 'VariableNames',{'social','nonsocial(idle/groom)','explore','agonist','defensive','nondefensive_social','sniff','initiative','animalID','animalGen'});
-KO_behav_grp = T3(strcmp(T3.animalGen,'KO'),:);
-HET_behav_grp = T3(strcmp(T3.animalGen,'HET'),:);
-WT_behav_grp = T3(strcmp(T3.animalGen,'WT'),:);
+KO_behav_grp = T3(T3.animalGen =='KO',:);
+HET_behav_grp = T3(T3.animalGen=='HET',:);
+WT_behav_grp = T3(T3.animalGen=='WT',:);
+C57 = T3(T3.animalGen=='C57',:);
 colnames = T3.Properties.VariableNames;
 figure; 
 for i = 1:8
-    ax = subplot(2,4,i); XZBoxPlot({KO_behav_grp.(colnames{i}),HET_behav_grp.(colnames{i}),WT_behav_grp.(colnames{i})},[],[],{'KO','HET','WT'},[],ax); title(colnames{i});
+    ax = subplot(2,4,i); XZBoxPlot({KO_behav_grp.(colnames{i}),HET_behav_grp.(colnames{i}),WT_behav_grp.(colnames{i}),C57.(colnames{i})},[],[],{'KO','HET','WT','C57'},[],ax); title(strrep(colnames{i},'_','-'));
 end
+saveas(gcf,'Interval.png','png');
 %% get index of het-ko, ko-ko, ko-wt pairs
 hetko = [];
 koko = [];
@@ -162,14 +168,14 @@ KOWT_grp = sortrows(T1([kowt*2-1,kowt*2],:),{'animalGen','ExpIdx'});
 HETHET_grp = sortrows(T1([hethet*2-1,hethet*2],:),{'animalGen','ExpIdx'});
 HETWT_grp = sortrows(T1([hetwt*2-1,hetwt*2],:),{'animalGen','ExpIdx'});
 colnames = T1.Properties.VariableNames;
-
+colors = [0.7,0,0 ;0.3,0.3,0; 0.7,0.7,0; 0,0.5,0.5; 0,1,1; 0,0.7,0; 0.7,0,0.7; 1,0,1];
 figure; 
 for i = 1:8
     cur_data = {KOKO_grp.(colnames{i}), HETKO_grp(strcmp(HETKO_grp.animalGen,'KO'),:).(colnames{i}),HETKO_grp(strcmp(HETKO_grp.animalGen,'HET'),:).(colnames{i}),...
         KOWT_grp(strcmp(KOWT_grp.animalGen,'KO'),:).(colnames{i}),KOWT_grp(strcmp(KOWT_grp.animalGen,'WT'),:).(colnames{i}),HETHET_grp.(colnames{i}),...
         HETWT_grp(strcmp(HETWT_grp.animalGen,'HET'),:).(colnames{i}),HETWT_grp(strcmp(HETWT_grp.animalGen,'WT'),:).(colnames{i})};
 
-    ax = subplot(2,4,i); XZBoxPlot(cur_data,[],[],{'KOKO','HETKO-KO','HETKO-HET','KOWT-KO','KOWT-WT','HETHET','HETWT-HET','HETWT-WT'},[],ax); title(strrep(colnames{i},'_','-'));
+    ax = subplot(2,4,i); XZBoxPlot(cur_data,[],[],{'KOKO','HETKO-KO','HETKO-HET','KOWT-KO','KOWT-WT','HETHET','HETWT-HET','HETWT-WT'},colors,ax); title(strrep(colnames{i},'_','-'));
     ax.NextPlot = 'add';
     % add points
     for j = 1:length(cur_data)
