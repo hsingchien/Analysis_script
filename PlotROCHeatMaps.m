@@ -17,12 +17,18 @@ for i = 1:numel(flist)
     if isfield(M1,'GenType')
         m1G = M1.GenType; m2G = M2.GenType;
     else
-        m1G = ''; m2G = '';
+        m1G = 'C57'; m2G = 'C57';
     end
     sessionN = 'exp'; fnames = fields(M1.ROC);
+    if isempty(find(contains(fnames,sessionN)))
+        continue;
+    end
+    
     session = fnames{find(contains(fnames,sessionN))};
-    if strcmp(sessionN,'exp'); expBvs = M1.ROC.(session).other.self.Behavior.EventNames; end
-    if strcmp(sessionN,'toy'); toyBvs = M1.ROC.(session).other.self.Behavior.EventNames; end
+
+
+    if strcmp(sessionN,'exp'); expBvs = M1.ROC.(session).other.self.Behavior.EventNames; expBvs = strrep(expBvs,'_','-');end
+    if strcmp(sessionN,'toy'); toyBvs = M1.ROC.(session).other.self.Behavior.EventNames; toyBvs = strrep(toyBvs,'_','-');end
     self1 = getSigCells(M1.ROC.(session).other.self.Encoding,pthreshold);
 %     heatMap(self1,'xTickLabels',M1.ROC.(session).other.self.Behavior.EventNames,'colormap',[1,0,0;1,1,1;0,1,1],'fontSize',10);
 %     set(gcf,'Position',[0,0,800,700]); saveas(gcf,[targetFolder,sessionN,'\','self\',M1.ExperimentID,'-',M1.AnimalID,'-',m1G,'.png'],'png');
@@ -69,10 +75,66 @@ for i = 1:numel(flist)
     
 
 end
+
+%% boxplot fraction of suppressed/active cells by genotypes
+types = {'self','partner','selfdrvd','partnerdrvd'};
+gens = {'KO','HET','WT'};
+KOfrac = cell(1,4); HETfrac = cell(1,4); WTfrac = cell(1,4); C57frac = cell(1,4);
+catBvs = {'sniff','aggressive','defensive','exploratory','initiative','investigateOBJ','other'};
+for i = 1:numel(types)
+   
+    cur_act = all_active.(types{i});
+    
+    for j = 1:numel(cur_act)
+        active_frac = sum(cur_act{j}==1,1)/size(cur_act{j},1);
+        active_frac(isnan(cur_act{j}(1,:))) = nan; % keep nans
+        suppress_frac = sum(cur_act{j}==-1,1)/size(cur_act{j},1);
+        suppress_frac(isnan(cur_act{j}(1,:))) = nan;
+%         if length(active_frac)==7
+%             active_frac = active_frac([1:5,7]);
+%             suppress_frac = suppress_frac([1:5,7]);
+%         end
+        switch GenTracker{j}
+            case 'KO'
+                KOfrac{i} = [KOfrac{i}; [active_frac,suppress_frac]];
+            case 'HET'
+                HETfrac{i} = [HETfrac{i}; [active_frac,suppress_frac]];
+            case 'WT'
+                WTfrac{i} = [WTfrac{i}; [active_frac,suppress_frac]];
+            case 'C57'
+                C57frac{i} = [C57frac{i};[active_frac,suppress_frac]];
+        end
+    end
+    nbehav = size(C57frac{i},2);
+    
+    if i < 3
+        xlabels = [strcat(toyBvs,'-act'),strcat(toyBvs,'-sup')];
+    else
+        xlabels = [strcat(catBvs,'-act'),strcat(catBvs,'-sup')];
+    end
+
+    XZBoxPlot(C57frac(i),[ones(1,nbehav/2),ones(1,nbehav/2)*2],[1:2:nbehav, 2:2:nbehav],xlabels,[]);
+    xtickangle(45); set(gca,'fontsize',9,'TickLength',[0.004,0.004]); title(types{i}); legend({'suppress','active'});
+%     figure, a = subplot(3,1,1);
+%     XZBoxPlot(KOfrac(i),[ones(1,nbehav/2),ones(1,nbehav/2)*2],[1:2:nbehav, 2:2:nbehav],xlabels,[],a);
+%     xtickangle(45);set(a,'fontsize',9,'TickLength',[0.004,0.004]);
+%     title('KO'); legend({'suppress','active'});
+%     a = subplot(3,1,2);
+%     XZBoxPlot(HETfrac(i),[ones(1,nbehav/2),ones(1,nbehav/2)*2],[1:2:nbehav, 2:2:nbehav],xlabels,[],a);
+%     xtickangle(45); set(a,'fontsize',9,'TickLength',[0.004,0.004]);
+%     title('HET');legend({'suppress','active'});
+%     a = subplot(3,1,3);
+%     XZBoxPlot(WTfrac(i),[ones(1,nbehav/2),ones(1,nbehav/2)*2],[1:2:nbehav, 2:2:nbehav],xlabels,[],a);
+%     xtickangle(45);set(a,'fontsize',9); set(a,'fontsize',9,'TickLength',[0.004,0.004]);
+%     title('WT');legend({'suppress','active'});
+%     sgtitle(types{i});
+end
+
+
 %% Plot fraction of cells of ROC output
 types = {'self','partner','selfdrvd','partnerdrvd'};
 gens = {'KO','HET','WT'};
-PLSCthreshold = 0.95
+PLSCthreshold = 0.95;
  % first half active second half suppress
 for i = 1:numel(types)
     KOactive = []; HETactive = []; WTactive = [];
@@ -215,7 +277,7 @@ for j = 1:2:numel(all_active.(types{1}))
    
 end
 %%
-
+toyPexpP = cell(1,2); toyPexpN = cell(1,2); toyNexpP = cell(1,2); toyNexpN = cell(1,2); % first individual second derived
 [all_active.covmat_indiv_pos, all_active.covmat_indiv_neg,all_active.covmat_indiv_pos1neg2,all_active.covmat_indiv_pos2neg1] = deal({});
 [all_active.covmat_drvd_pos, all_active.covmat_drvd_neg,all_active.covmat_drvd_pos1neg2,all_active.covmat_drvd_pos2neg1] = deal({});
 for i = 1 : 1/2*numel(all_active.self)
@@ -234,29 +296,47 @@ for i = 1 : 1/2*numel(all_active.self)
     all_active.covmat_indiv_pos1neg2 = [all_active.covmat_indiv_pos1neg2, temp_toy_pos' * abs(temp_exp_neg)];
     all_active.covmat_indiv_pos2neg1 = [all_active.covmat_indiv_pos2neg1, abs(temp_toy_neg') * temp_exp_pos];
     figure; subplot(2,2,1); 
-    heatMap(temp_toy_pos' * temp_exp_pos,'xTickLabels',expBvs,'yTickLabels',toyBvs,'fontSize',10); title('toyPos-expPos'); subplot(2,2,2); 
-    heatMap(temp_toy_neg' * temp_exp_neg,'xTickLabels',expBvs,'yTickLabels',toyBvs,'fontSize',10); title('toyNeg-expNeg'); subplot(2,2,3);
-    heatMap(temp_toy_pos' * abs(temp_exp_neg),'xTickLabels',expBvs,'yTickLabels',toyBvs,'fontSize',10); title('toyPos-expNeg'); subplot(2,2,4);
-    heatMap(abs(temp_toy_neg') * temp_exp_pos,'xTickLabels',expBvs,'yTickLabels',toyBvs,'fontSize',10); title('toyNeg-expPos');
+%     heatMap(temp_toy_pos' * temp_exp_pos,'xTickLabels',expBvs,'yTickLabels',toyBvs,'fontSize',10); title('toyPos-expPos'); subplot(2,2,2); 
+%     heatMap(temp_toy_neg' * temp_exp_neg,'xTickLabels',expBvs,'yTickLabels',toyBvs,'fontSize',10); title('toyNeg-expNeg'); subplot(2,2,3);
+%     heatMap(temp_toy_pos' * abs(temp_exp_neg),'xTickLabels',expBvs,'yTickLabels',toyBvs,'fontSize',10); title('toyPos-expNeg'); subplot(2,2,4);
+%     heatMap(abs(temp_toy_neg') * temp_exp_pos,'xTickLabels',expBvs,'yTickLabels',toyBvs,'fontSize',10); title('toyNeg-expPos');
+    toyPexpP{1} = cat(3,toyPexpP{1},temp_toy_pos' * temp_exp_pos/size(temp_exp_pos,1));
+    toyNexpP{1} = cat(3,toyNexpP{1},abs(temp_toy_neg)' * temp_exp_pos/size(temp_exp_pos,1));
+    toyPexpN{1} = cat(3,toyPexpN{1},temp_toy_pos' * abs(temp_exp_neg)/size(temp_exp_pos,1));
+    toyNexpN{1} = cat(3,toyNexpN{1},temp_toy_neg' * temp_exp_neg/size(temp_exp_pos,1));
+    
     PairID = strsplit(ATracker{2*i-1},'-'); PairID = PairID{1};
-    set(gcf,'Position',[0,0,1920,1080]); saveas(gcf,[targetFolder,'\',PairID,'1.png'],'png');
+%     set(gcf,'Position',[0,0,1920,1080]); saveas(gcf,[targetFolder,'\',PairID,'1.png'],'png');
     close all;
     all_active.covmat_drvd_pos = [all_active.covmat_drvd_pos, temp_toy_d_pos' * temp_exp_d_pos];
     all_active.covmat_drvd_neg = [all_active.covmat_drvd_neg, temp_toy_d_neg' * temp_exp_d_neg];
     all_active.covmat_drvd_pos1neg2 = [all_active.covmat_drvd_pos1neg2, temp_toy_d_pos' * abs(temp_exp_d_neg)];
     all_active.covmat_drvd_pos2neg1 = [all_active.covmat_drvd_pos2neg1, abs(temp_toy_d_neg') * temp_exp_d_pos];
     figure; subplot(2,2,1); 
-    heatMap(temp_toy_d_pos' * temp_exp_d_pos,'xTickLabels',expdrvBvs,'yTickLabels',toydrvBvs,'fontSize',10); title('toyPos-expPos'); subplot(2,2,2); 
-    heatMap(temp_toy_d_neg' * temp_exp_d_neg,'xTickLabels',expdrvBvs,'yTickLabels',toydrvBvs,'fontSize',10); title('toyNeg-expNeg'); subplot(2,2,3);
-    heatMap(temp_toy_d_pos' * abs(temp_exp_d_neg),'xTickLabels',expdrvBvs,'yTickLabels',toydrvBvs,'fontSize',10); title('toyPos-expNeg'); subplot(2,2,4);
-    heatMap(abs(temp_toy_d_neg') * temp_exp_d_pos,'xTickLabels',expdrvBvs,'yTickLabels',toydrvBvs,'fontSize',10); title('toyNeg-expPos');
+%     heatMap(temp_toy_d_pos' * temp_exp_d_pos,'xTickLabels',expdrvBvs,'yTickLabels',toydrvBvs,'fontSize',10); title('toyPos-expPos'); subplot(2,2,2); 
+%     heatMap(temp_toy_d_neg' * temp_exp_d_neg,'xTickLabels',expdrvBvs,'yTickLabels',toydrvBvs,'fontSize',10); title('toyNeg-expNeg'); subplot(2,2,3);
+%     heatMap(temp_toy_d_pos' * abs(temp_exp_d_neg),'xTickLabels',expdrvBvs,'yTickLabels',toydrvBvs,'fontSize',10); title('toyPos-expNeg'); subplot(2,2,4);
+%     heatMap(abs(temp_toy_d_neg') * temp_exp_d_pos,'xTickLabels',expdrvBvs,'yTickLabels',toydrvBvs,'fontSize',10); title('toyNeg-expPos');
+    toyPexpP{2} = cat(3,toyPexpP{2},temp_toy_d_pos' * temp_exp_d_pos/size(temp_exp_d_pos,1));
+    toyNexpP{2} = cat(3,toyNexpP{2},abs(temp_toy_d_neg)' * temp_exp_d_pos/size(temp_exp_d_pos,1));
+    toyPexpN{2} = cat(3,toyPexpN{2},temp_toy_d_pos' * abs(temp_exp_d_neg)/size(temp_exp_d_pos,1));
+    toyNexpN{2} = cat(3,toyNexpN{2},temp_toy_d_neg' * temp_exp_d_neg/size(temp_exp_d_pos,1));
     PairID = strsplit(ATracker{2*i-1},'-'); PairID = PairID{1};
-    set(gcf,'Position',[0,0,1920,1080]); saveas(gcf,[targetFolder,'\',PairID,'2.png'],'png');
+%     set(gcf,'Position',[0,0,1920,1080]); saveas(gcf,[targetFolder,'\',PairID,'2.png'],'png');
     close all
     
 end
 
+figure; subplot(2,2,1); 
+    heatMap(round(mean(toyPexpP{1}(1:end-1,1:end-1,:),3,'omitnan'),2),'xTickLabels',expBvs(1:end-1),'yTickLabels',toyBvs(1:end-1),'fontSize',10); title('toyPos-expPos'); subplot(2,2,2); 
+    heatMap(round(mean(toyNexpN{1}(1:end-1,1:end-1,:),3,'omitnan'),2),'xTickLabels',expBvs(1:end-1),'yTickLabels',toyBvs(1:end-1),'fontSize',10); title('toyNeg-expNeg'); subplot(2,2,3);
+    heatMap(round(mean(toyPexpN{1}(1:end-1,1:end-1,:),3,'omitnan'),2),'xTickLabels',expBvs(1:end-1),'yTickLabels',toyBvs(1:end-1),'fontSize',10); title('toyPos-expNeg'); subplot(2,2,4);
+    heatMap(round(mean(toyNexpP{1}(1:end-1,1:end-1,:),3,'omitnan'),2),'xTickLabels',expBvs(1:end-1),'yTickLabels',toyBvs(1:end-1),'fontSize',10); title('toyNeg-expPos');
 
 
-
+figure; subplot(2,2,1); 
+    heatMap(round(mean(toyPexpP{2}(3:6,1:5,:),3,'omitnan'),2),'xTickLabels',catBvs(1:5),'yTickLabels',catBvs(3:6),'fontSize',10); title('toyPos-expPos'); subplot(2,2,2); 
+    heatMap(round(mean(toyNexpN{2}(3:6,1:5,:),3,'omitnan'),2),'xTickLabels',catBvs(1:5),'yTickLabels',catBvs(3:6),'fontSize',10); title('toyNeg-expNeg'); subplot(2,2,3);
+    heatMap(round(mean(toyPexpN{2}(3:6,1:5,:),3,'omitnan'),2),'xTickLabels',catBvs(1:5),'yTickLabels',catBvs(3:6),'fontSize',10); title('toyPos-expNeg'); subplot(2,2,4);
+    heatMap(round(mean(toyNexpP{2}(3:6,1:5,:),3,'omitnan'),2),'xTickLabels',catBvs(1:5),'yTickLabels',catBvs(3:6),'fontSize',10); title('toyNeg-expPos');
 
