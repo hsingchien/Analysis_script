@@ -22,6 +22,8 @@ for i = 1:numel(flist)
     sessionN = 'exp'; fnames = fields(M1.ROC);
     if isempty(find(contains(fnames,sessionN)))
         continue;
+    else
+        disp(flist{i})
     end
     
     session = fnames{find(contains(fnames,sessionN))};
@@ -80,7 +82,8 @@ end
 types = {'self','partner','selfdrvd','partnerdrvd'};
 gens = {'KO','HET','WT'};
 KOfrac = cell(1,4); HETfrac = cell(1,4); WTfrac = cell(1,4); C57frac = cell(1,4);
-catBvs = {'sniff','aggressive','defensive','exploratory','initiative','investigateOBJ','other'};
+% catBvs = {'sniff','aggressive','defensive','exploratory','initiative','investigateOBJ','other'}; % for toy sessions
+catBvs ={'sniff','aggressive','defensive','exploratory','initiative','other'};
 for i = 1:numel(types)
    
     cur_act = all_active.(types{i});
@@ -105,29 +108,57 @@ for i = 1:numel(types)
                 C57frac{i} = [C57frac{i};[active_frac,suppress_frac]];
         end
     end
-    nbehav = size(C57frac{i},2);
+    nbehav = size(KOfrac{i},2);
     
     if i < 3
-        xlabels = [strcat(toyBvs,'-act'),strcat(toyBvs,'-sup')];
+        xlabels = [strcat(expBvs,'-act'),strcat(expBvs,'-sup')];
     else
         xlabels = [strcat(catBvs,'-act'),strcat(catBvs,'-sup')];
     end
 
-    XZBoxPlot(C57frac(i),[ones(1,nbehav/2),ones(1,nbehav/2)*2],[1:2:nbehav, 2:2:nbehav],xlabels,[]);
-    xtickangle(45); set(gca,'fontsize',9,'TickLength',[0.004,0.004]); title(types{i}); legend({'suppress','active'});
-%     figure, a = subplot(3,1,1);
-%     XZBoxPlot(KOfrac(i),[ones(1,nbehav/2),ones(1,nbehav/2)*2],[1:2:nbehav, 2:2:nbehav],xlabels,[],a);
-%     xtickangle(45);set(a,'fontsize',9,'TickLength',[0.004,0.004]);
+% C57 toy
+%     XZBoxPlot(C57frac(i),[ones(1,nbehav/2),ones(1,nbehav/2)*2],[1:2:nbehav, 2:2:nbehav],xlabels,[]);
+%     xtickangle(45); set(gca,'fontsize',9,'TickLength',[0.004,0.004]); title(types{i}); legend({'suppress','active'});
+
+% Shank exp by genotype
+%     figure, tiledlayout(3,1,'TileSpacing', 'tight','Padding','tight'); nexttile
+%     XZBoxPlot(KOfrac(i),[ones(1,nbehav/2),ones(1,nbehav/2)*2],[1:2:nbehav, 2:2:nbehav],xlabels,[],gca,'dot');
+%     xtickangle(45);set(gca,'fontsize',9,'TickLength',[0.004,0.004]);
 %     title('KO'); legend({'suppress','active'});
-%     a = subplot(3,1,2);
-%     XZBoxPlot(HETfrac(i),[ones(1,nbehav/2),ones(1,nbehav/2)*2],[1:2:nbehav, 2:2:nbehav],xlabels,[],a);
-%     xtickangle(45); set(a,'fontsize',9,'TickLength',[0.004,0.004]);
+%     nexttile
+%     XZBoxPlot(HETfrac(i),[ones(1,nbehav/2),ones(1,nbehav/2)*2],[1:2:nbehav, 2:2:nbehav],xlabels,[],gca,'dot');
+%     xtickangle(45); set(gca,'fontsize',9,'TickLength',[0.004,0.004]);
 %     title('HET');legend({'suppress','active'});
-%     a = subplot(3,1,3);
-%     XZBoxPlot(WTfrac(i),[ones(1,nbehav/2),ones(1,nbehav/2)*2],[1:2:nbehav, 2:2:nbehav],xlabels,[],a);
-%     xtickangle(45);set(a,'fontsize',9); set(a,'fontsize',9,'TickLength',[0.004,0.004]);
+%     nexttile
+%     XZBoxPlot(WTfrac(i),[ones(1,nbehav/2),ones(1,nbehav/2)*2],[1:2:nbehav, 2:2:nbehav],xlabels,[],gca,'dot');
+%     xtickangle(45);set(gca,'fontsize',9,'TickLength',[0.004,0.004]);
 %     title('WT');legend({'suppress','active'});
 %     sgtitle(types{i});
+
+% Shank exp by behav
+    figure;
+    if i < 3
+        tiledlayout(4,6,'TileSpacing','tight','Padding','tight');
+    else
+        tiledlayout(3,2,'TileSpacing','tight','Padding','tight');
+    end
+    colors = [0.9,0.2,0.2;0.6,0.2,0.2;0.2,0.9,0.2;0.2,0.6,0.2;0.2,0.2,0.9;0.2,0.2,0.6];
+
+    for k = 1:(numel(xlabels)/2)-1
+        nexttile;
+        XZBoxPlot({KOfrac{i}(:,k),KOfrac{i}(:,k+nbehav/2),HETfrac{i}(:,k),HETfrac{i}(:,k+nbehav/2),WTfrac{i}(:,k),WTfrac{i}(:,k+nbehav/2)},...
+            [1,2,3,4,5,6],[],{'KO-act','KO-sup','HET-act','HET-sup','WT-act','WT-sup'},colors,gca,'dot');
+        if i<3
+            title(expBvs{k});
+        else
+            title(catBvs{k});
+        end
+        xtickangle(30);
+
+    end
+    sgtitle(types{i});
+
+
 end
 
 
@@ -336,7 +367,78 @@ figure; subplot(2,2,1);
 
 figure; subplot(2,2,1); 
     heatMap(round(mean(toyPexpP{2}(3:6,1:5,:),3,'omitnan'),2),'xTickLabels',catBvs(1:5),'yTickLabels',catBvs(3:6),'fontSize',10); title('toyPos-expPos'); subplot(2,2,2); 
-    heatMap(round(mean(toyNexpN{2}(3:6,1:5,:),3,'omitnan'),2),'xTickLabels',catBvs(1:5),'yTickLabels',catBvs(3:),'fontSize',10); title('toyNeg-expNeg'); subplot(2,2,3);
-    heatMap(round(mean(toyPexpN{2}(3:6,1:5,:),3,'omitnan'),2),'xTickLabels',catBvs(1:5),'yTickLabels',catBvs,'fontSize',10); title('toyPos-expNeg'); subplot(2,2,4);
-    heatMap(round(mean(toyNexpP{2}(3:6,1:5,:),3,'omitnan'),2),'xTickLabels',catBvs(1:5),'yTickLabels',catBvs,'fontSize',10); title('toyNeg-expPos');
+    heatMap(round(mean(toyNexpN{2}(3:6,1:5,:),3,'omitnan'),2),'xTickLabels',catBvs(1:5),'yTickLabels',catBvs(3:6),'fontSize',10); title('toyNeg-expNeg'); subplot(2,2,3);
+    heatMap(round(mean(toyPexpN{2}(3:6,1:5,:),3,'omitnan'),2),'xTickLabels',catBvs(1:5),'yTickLabels',catBvs(3:6),'fontSize',10); title('toyPos-expNeg'); subplot(2,2,4);
+    heatMap(round(mean(toyNexpP{2}(3:6,1:5,:),3,'omitnan'),2),'xTickLabels',catBvs(1:5),'yTickLabels',catBvs(3:6),'fontSize',10); title('toyNeg-expPos');
 
+%% Plot PSTH
+for i = 1:numel(allPairs)
+    sessionID = find(~cellfun(@isempty, allPairs{i}{1}.Behavior));
+    if isempty(sessionID)
+        continue
+    end
+    
+    for j = 1:numel(allPairs{i})
+       cur_mou = allPairs{i}{j}
+       mkdir([cur_mou.ExperimentID,'\', cur_mou.AnimalID]);
+       f = fields(cur_mou.Behavior{sessionID}.ROC);
+       for ff = 1:numel(f)
+           fieldn = f{ff};
+           sig_cell_list = getSigCells(cur_mou.Behavior{sessionID}.ROC.(fieldn).Encoding,pthreshold);
+           % sig_cell_list = ncell x nbehav, 1 = act, -1 = supp
+           patchOpp = contains(fieldn,'partner');
+           for bb = 1:size(sig_cell_list,2)
+               if isnan(sig_cell_list(1,bb))
+                   continue
+               end
+               bname = cur_mou.Behavior{sessionID}.ROC.(fieldn).Encoding.EventNames{bb};
+               clist = [find(sig_cell_list(:,bb)==1); find(sig_cell_list(:,bb)==-1)];
+               
+               PlotSelectedCells(allPairs{i}, j, sessionID, clist, {bname,bname}, patchOpp);
+               title([cur_mou.AnimalID,'-',fieldn,'-',strrep(bname,',','-')]);
+               set(gcf,'Position',[100,0,1200,700]);
+               saveas(gcf,[cur_mou.ExperimentID,'\', cur_mou.AnimalID,'\',fieldn,'-',strrep(bname,',','-'),'.png']);
+               
+               close all
+           end
+
+       end
+    end
+end
+%% % overlap between behaviors
+indi_act_act = [];
+cat_act_act = [];
+
+for i = 1:numel(allPairs)
+    sessionID = find(~cellfun(@isempty, allPairs{i}{1}.Behavior));
+    if isempty(sessionID)
+        continue
+    end
+    for j = 1:numel(allPairs{i}) 
+        cur_mou = allPairs{i}{j};
+        for ff = {'self','derived_self'}
+            sig_cell_list = getSigCells(cur_mou.Behavior{sessionID}.ROC.(ff{1}).Encoding,pthreshold);
+            sig_cell_list(sig_cell_list<0) = 0; % only keep activated cells
+            overlap = sig_cell_list'*sig_cell_list;
+            overlap = overlap./repmat(sum(sig_cell_list,1),[size(sig_cell_list,2),1]); % normalize to number of active cells;
+            heatMap(round(overlap,2),'xTickLabels',cur_mou.Behavior{sessionID}.ROC.(ff{1}).Encoding.EventNames,...
+                'yTickLabels',cur_mou.Behavior{sessionID}.ROC.(ff{1}).Encoding.EventNames,'fontSize',10);
+            set(gcf,'Position',[100,100,1000,800]);
+            mkdir(['ROC_overlap\',cur_mou.ExperimentID,'\']);
+            saveas(gcf,['ROC_overlap\',cur_mou.ExperimentID,'\',cur_mou.AnimalID,'-',ff{1},'.png']);
+            if strcmp(ff{1},'self')
+                indi_act_act = cat(3,indi_act_act,overlap);
+            elseif strcmp(ff{1},'derived_self')
+                cat_act_act = cat(3, cat_act_act, overlap);
+            end
+        end
+    end
+end
+%% calculate average overlap and produce heatmap
+indiNames = allPairs{1}{1}.Behavior{2}.ROC.self.Encoding.EventNames;
+catNames = allPairs{1}{1}.Behavior{2}.ROC.derived_self.Encoding.EventNames;
+heatMap(mean(indi_act_act,3,'omitnan',true), 'xTickLabels', indiNames,'yTickLabels',indiNames,'fontSize',10);
+
+
+
+            

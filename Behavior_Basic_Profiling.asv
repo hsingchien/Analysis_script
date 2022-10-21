@@ -271,7 +271,7 @@ T1.PLSC1_social_pow = zeros(size(T1,1),1);
 T1.PLSC2_social_pow = zeros(size(T1,1),1);
 PLSC1var = cell(1,numel(genidx));
 PLSC1social = cell(1,numel(genidx));
-colnames = {'PLSC1_varfrac','PLSC1_social','PLSC1_social_pow','social_PLSC1','PLSC2_varfrac','PLSC2_social','PLSC2_social_pow', 'social_PLSC2'};
+colnames = {'PLSC1_varfrac','PLSC1_social','PLSC1_social_pow','PLSC2_varfrac','PLSC2_social','PLSC2_social_pow'};
 % hetko, koko, kowt,hethet, hetwt
 for j = 1:numel(allPairs_behav)
         m = find(~cellfun(@isempty,allPairs_behav{j}{1}.Behavior));
@@ -284,10 +284,8 @@ for j = 1:numel(allPairs_behav)
         varPLSC1 = diag(PLSC1'*PLSC1); varPLSC2 = diag(PLSC2'*PLSC2);
         T1.PLSC1_varfrac(j*2-1) = varPLSC1(1)/sum(varPLSC1); T1.PLSC1_varfrac(j*2) = varPLSC2(1)/sum(varPLSC2);
         T1.PLSC2_varfrac(j*2-1) = varPLSC1(2)/sum(varPLSC1); T1.PLSC2_varfrac(j*2) = varPLSC2(2)/sum(varPLSC2);
-        social_logical1 = logical(sum(cat(1,M1.Behavior{m}.LogicalVecs{social_bv}),1));
+        social_logical1 = logical(sum(cat(1,M1.Behavior{m}.LogicalVecs{social_bv}(M1.TimeStamp.mapTs{m})),1));
         social_logical2 = logical(sum(cat(1,M2.Behavior{m}.LogicalVecs{social_bv}),1));
-        social_logical1 = social_logical1(M1.TimeStamp.mapTs{m}.B2M);
-        social_logical2 = social_logical2(M2.TimeStamp.mapTs{m}.B2M);
         PLSC1_1 = PLSC1(:,1); PLSC2_1 = PLSC2(:,1);
         PLSC1_2 = PLSC1(:,2); PLSC2_2 = PLSC2(:,2);
         T1.PLSC1_social_pow(j*2-1) = sum((PLSC1_1(social_logical1(1:mlen))-mean(PLSC1_1)).^2)/sum(social_logical1(1:mlen));%sum((PLSC1_1-mean(PLSC1_1)).^2);
@@ -301,8 +299,8 @@ for j = 1:numel(allPairs_behav)
         % calculate within social frames the fraction of PLSC1 variance
         PLSCvar1 = diag(PLSC1(social_logical1,:)'*PLSC1(social_logical1,:));
         PLSCvar2 = diag(PLSC2(social_logical2,:)'*PLSC2(social_logical2,:));
-        T1.social_PLSC1(j*2-1) = PLSCvar1(1)/sum(PLSCvar1); T1.social_PLSC2(j*2-1) = PLSCvar1(2)/sum(PLSCvar1);
-        T1.social_PLSC1(j*2) = PLSCvar2(1)/sum(PLSCvar2); T1.social_PLSC2(j*2) = PLSCvar2(2)/sum(PLSCvar2);
+        T1.social_PLSC1(j*2-1) = PLSCvar1(1)/sum(PLSCvar1); T1.social_PLSC2(j*2-1) = PLSVvar1(2)/sum(PLSCvar1);
+        T1.social_PLSC1(j*2) = PLSCvar2(1)/sum(PLSCvar2); T1.social_PLSC2(j*2) = PLSCva2(2)/sum(PLSCvar2);
         
     end
 %% 
@@ -314,11 +312,10 @@ HETKO_grp = sortrows(T1([hetko*2-1,hetko*2],:),{'animalGen','ExpIdx'});
 KOWT_grp = sortrows(T1([kowt*2-1,kowt*2],:),{'animalGen','ExpIdx'});
 HETHET_grp = sortrows(T1([hethet*2-1,hethet*2],:),{'animalGen','ExpIdx'});
 HETWT_grp = sortrows(T1([hetwt*2-1,hetwt*2],:),{'animalGen','ExpIdx'});
-figure; tiledlayout(2,4,'TileSpacing','tight','Padding','tight');
+figure; tiledlayout(2,3,'TileSpacing','tight','Padding','tight');
 titles = {'PLSC1 fraction of total variance', 'fraction of variance in social frames in PLSC1', 'average (per frame) PLSC1 power of social frames',...
-    'fraction of PLSC1 in social frame','PLSC2 fraction of total variance', 'fraction of variance in social frames in PLSC2', 'average (per frame) PLSC2 power of social frames',...
-    'fraction of PLSC2 in social frame'};
-for i = 1:8
+    'PLSC2 fraction of total variance', 'fraction of variance in social frames in PLSC2', 'average (per frame) PLSC2 power of social frames'};
+for i = 1:6
     nexttile;
     cur_data = {KOKO_grp.(colnames{i}), HETKO_grp(and(HETKO_grp.aggress==0, HETKO_grp.animalGen=='KO'),:).(colnames{i}),HETKO_grp(and(HETKO_grp.aggress==0, HETKO_grp.animalGen=='HET'),:).(colnames{i}),...
         HETKO_grp(and(HETKO_grp.aggress~=0, HETKO_grp.animalGen=='KO'),:).(colnames{i}),HETKO_grp(and(HETKO_grp.aggress~=0, HETKO_grp.animalGen=='HET'),:).(colnames{i}),...

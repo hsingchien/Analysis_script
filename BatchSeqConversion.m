@@ -20,32 +20,45 @@ behav = {
 'E:\MiniscopeData(processed)\NewCage_free_dual\Shank3\DLX-DLX\XZ152_XZ146(m)\2022_03_09\15_20_08_exp\BehavCam_0';
 }
 %%
-expidx=2;
+% expidx=2;
 for i = 1:length(behav)
-cd(behav{i});
+    cd(behav{i});
 if exist('0.avi')
-VideoCombine(pwd, 'b',1, true, 'avi');
+    VideoCombine(pwd, 'b',1, true, 'avi');
 end
-% if isempty(dir('*.seq')) & exist('behav_video.avi')
-% seqName = 'behavior.seq';
-% aviName = 'behav_video.avi';
-% seqIo([seqName],'frImgs',struct('codec','png'),'aviName',[aviName]);
-% end
+if isempty(dir('*.seq')) & exist('behav_video.avi')
+    seqName = 'behavior.seq';
+    aviName = 'behav_video.avi';
+    seqIo([seqName],'frImgs',struct('codec','png'),'aviName',[aviName]);
+end
 try
     movefile behav_video.avi behav_video f;
     delete *.avi;
     movefile behav_video behav_video.avi f;
 end
-try
-    temp = strsplit(behav{i},'\');
-    
-    mkdir([targdir,'\',temp{5}]);
-    if ~exist([targdir,'\',temp{5},'\',temp{5},'_',temp{6},'_exp.avi'])
-        copyfile('behav_video.avi',[targdir,'\',temp{5},'\',temp{5},'_',temp{6},'_exp.avi']);
-    else
-        copyfile('behav_video.avi',[targdir,'\',temp{5},'\',temp{5},'_',temp{6},'_exp',num2str(expidx),'.avi']);
-        expidx = expidx+1;
-    end
+% try
+%     temp = strsplit(behav{i},'\');
+%     
+%     mkdir([targdir,'\',temp{5}]);
+%     if ~exist([targdir,'\',temp{5},'\',temp{5},'_',temp{6},'_exp.avi'])
+%         copyfile('behav_video.avi',[targdir,'\',temp{5},'\',temp{5},'_',temp{6},'_exp.avi']);
+%     else
+%         copyfile('behav_video.avi',[targdir,'\',temp{5},'\',temp{5},'_',temp{6},'_exp',num2str(expidx),'.avi']);
+%         expidx = expidx+1;
+%     end
+% end
+% expidx = 2;
 end
-expidx = 2;
+%%
+behav  = dir('**\');
+behav = unique({behav.folder});
+for i = 1:length(behav)
+    cd(behav{i});
+
+avis = dir("*.avi");
+avis = {avis.name};
+for j = 1:numel(avis)
+    seqName = strrep(avis{j},'avi','seq');
+    seqIo([seqName],'frImgs',struct('codec','png'),'aviName',[avis{j}]);
+end
 end

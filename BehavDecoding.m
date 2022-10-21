@@ -1,0 +1,76 @@
+%% prepare
+all_behav_exp = {'attack','chasing','tussling','threaten','escape','defend',...
+    'flinch','general-sniffing','sniff_face','sniff_genital','approach',...
+    'follow','interaction', 'socialgrooming', 'mount','dig',...
+    'selfgrooming', 'climb', 'exploreobj', 'biteobj', 'stand', 'nesting','human_interfere', 'other'};
+bv_cat = containers.Map;
+bv_cat('social_bv') = [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15];
+bv_cat('nonsocial_bv') = [16,18,19,20,21,17,22]; % explore + idle 
+bv_cat('explor_bv') = [16,18,19,20,21];
+bv_cat('agonist_bv') = [1,2,3,4];
+bv_cat('defensive_bv') = [5,6,7];
+bv_cat('nondefensive_social_bv') = setdiff(bv_cat('social_bv'), bv_cat('defensive_bv'));
+bv_cat('sniff_bv') = [8,9,10];
+bv_cat('initiative_bv') = [11,12];
+hm_interfere = 23;
+%% Data prepare
+kfold = 10;
+cvspace = 5;
+
+KO_perf = containers.Map(keys(bv_cat),cell(1,8));
+HET_perf = containers.Map(keys(bv_cat),cell(1,8));
+WT_perf = containers.Map(keys(bv_cat),cell(1,8));
+KO_perf_shift = containers.Map(keys(bv_cat),cell(1,8));
+HET_perf_shift = containers.Map(keys(bv_cat),cell(1,8));
+WT_perf_shift = containers.Map(keys(bv_cat),cell(1,8));
+for i = 1:numel(allPairs)
+    sessionID = find(~cellfun(@isempty, allPairs{i}{1}.Behavior));
+    if isempty(sessionID)
+        continue
+    end
+    for j = 1:numel(allPairs{i})
+        cur_mou = allPairs{i}{j};
+        part_mou = allPairs{i}{setdiff([1,2],j)};
+        F = zscore(cur_mou.MS{sessionID}.FiltTraces);
+        B = cur_mou.Behavior{sessionID}.LogicalVecs;
+        PartB = part_mou.Behavior{sessionID}.LogicalVecs;
+        ks = keys(bv_cat);
+        for k = ks
+            Y = sum(cat(1,PartB{bv_cat(k{1})}),1);
+            Y = Y(cur_mou.TimeStamp.mapTs{sessionID}.B2M);
+            Y = Y';
+            X = BinData(F(1:min(length(F),length(Y)),:),15,'mean');
+            Y = BinData(Y(1:min(length(F),length(Y))),15,'max');
+            if sum(Y) < 0.05*length(Y)
+                continue
+            end
+            % performance, performance_shifted
+            [perform, perform_shifted] = OnevOneDecoder(X, Y, kfold, cvspace,'lda','F1');
+            switch cur_mou.GenType
+                case 'KO'
+                    KO_perf(k{1}) = [KO_perf(k{1}),perform];
+                    KO_perf_shift(k{1}) = [KO_perf_shift(k{1}), perform_shifted];
+                case 'HET'
+                    HET_perf(k{1}) = [HET_perf(k{1}),perform];
+                    HET_perf_shift(k{1}) = [HET_perf_shift(k{1}), perform_shifted];
+                case 'WT'
+                    WT_perf(k{1}) = [WT_perf(k{1}),perform];
+                    WT_perf_shift(k{1}) = [WT_perf_shift(k{1}), perform_shifted];
+            end
+    end
+    end    
+end
+  
+%% plot
+figure, tiledlayout('flow','TileSpacing','tight','Padding','tight');
+for k = keys(bv_cat)
+    kn = k{1};
+    mm = @(x) mean(x, 1,'omitnan') ;
+    cur_data = {KO_perf(kn), KO_perf_shift(kn), HET_perf(kn), HET_perf_shift(kn), WT_perf(kn), WT_perf_shift(kn)};
+    cur_data = cellfun(mm,cur_data,'UniformOutput', false);
+    cur_data = cellfun(@transpose, cur_data,'UniformOutput', false);
+    nexttile;
+    XZBoxPlot(cur_data,[1,1,2,2,3,3],[],{'KO','KO-shift','HET','HET-shift','WT','WT-shift'},[],gca,'dot');
+    xtickangle(30);ylabel('F1 score');
+    title(strrep(kn,'_','-'));
+end
